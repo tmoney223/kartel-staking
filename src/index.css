@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background-color: black;
+}
+html, body, #root {
+  height: 100%;
+}
+@keyframes fade-in-slow {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in-slow {
+  animation: fade-in-slow 2s ease-out forwards;
+}
+
+@keyframes explode {
+  0% { opacity: 0; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+.explode {
+  animation: explode 1s ease-out forwards;
+}
