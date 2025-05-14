@@ -123,13 +123,17 @@ const Dashboard = () => {
       {/* Content */}
       <div className="w-full max-w-3xl space-y-6">
         {/* BALANCES */}
-        <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
-          <h2 className="text-xl font-bold mb-4">BALANCES</h2>
-          <p>KARTEL: {kartel.data?.formatted}{formatUsd('KARTEL', kartel.data?.formatted)}</p>
-          <p>USDC: {usdc.data?.formatted}{formatUsd('USDC', usdc.data?.formatted)}</p>
-          <p>PESO: {peso.data?.formatted}{formatUsd('PESO', peso.data?.formatted)}</p>
-          <p>KARTEL/PESO LP: {lp.data?.formatted}</p>
-        </div>
+<div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
+  <h2 className="text-xl font-bold mb-4">BALANCES</h2>
+  <p>KARTEL: {kartel.data?.formatted}{formatUsd('KARTEL', kartel.data?.formatted)}</p>
+  <p>USDC: {usdc.data?.formatted}{formatUsd('USDC', usdc.data?.formatted)}</p>
+  <p>PESO: {peso.data?.formatted}{formatUsd('PESO', peso.data?.formatted)}</p>
+  {/* TODO: Replace with actual LP balance hooks below */}
+  <p>PESO/USDC V2 LP: 0.00</p>
+  <p>KARTEL/WETH V2 LP: 0.00</p>
+  <p>PESO/WETH V2 LP: 0.00</p>
+</div>
+
 
         {/* STAKING SECTION */}
 <div className="bg-gray-900 p-4 rounded border border-gray-700">
@@ -169,25 +173,27 @@ const Dashboard = () => {
             <button className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded text-white text-sm">Stake</button>
             <button className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-white text-sm">Unstake</button>
             <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white text-sm">Claim</button>
-            <a
-              href={`https://dex.kartel.exchange/add/${pool.name.replace(/\s/g, '').replace('V2', '').replace('/', '-')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded text-white text-sm"
-            >
-              Get LP
-            </a>
           </div>
         </div>
 
-        <div className="text-sm text-gray-300 pl-1">
-          <p>📥 Your Staked LP: <span className="font-semibold text-white">0.00</span></p>
-          <p>💰 Claimable $KARTEL: <span className="font-semibold text-white">0.00</span></p>
+        <a
+          href={`https://dex.kartel.exchange/add/${pool.name.replace(/\s/g, '').replace('V2', '').replace('/', '-')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white text-sm mt-2"
+        >
+          Get LP
+        </a>
+
+        <div className="text-sm text-gray-300 pl-1 pt-2">
+          <p>📥 Your Staked LP: <span className="font-semibold text-white">0.00</span> <span className="text-gray-400">($0.00)</span></p>
+          <p>💰 Claimable $KARTEL: <span className="font-semibold text-white">0.00</span> <span className="text-gray-400">($0.00)</span></p>
         </div>
       </div>
     ))}
   </div>
 </div>
+
 
 
 
