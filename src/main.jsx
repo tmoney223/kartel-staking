@@ -107,7 +107,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen text-white p-6 flex flex-col items-center" style={{
       backgroundColor: '#2c2c2c',
-      backgroundImage: "url('/desert-background.png')",
+      backgroundImage: "url('/entry-desert-suvs.png')",
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     }}>
