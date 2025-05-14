@@ -46,8 +46,6 @@ const wagmiClient = createClient({ autoConnect: true, connectors, provider });
 
 const Dashboard = () => {
   const { address, isConnected } = useAccount();
-  const [inputUSDC, setInputUSDC] = useState('');
-  const [inputRedeem, setInputRedeem] = useState('');
   const [prices, setPrices] = useState({ KARTEL: 0.0, PESO: 0.05, USDC: 1 });
   const [pesoSupply, setPesoSupply] = useState(0);
   const [usdcReserves, setUsdcReserves] = useState(0);
@@ -133,20 +131,65 @@ const Dashboard = () => {
           <p>KARTEL/PESO LP: {lp.data?.formatted}</p>
         </div>
 
-        {/* MINTING */}
-        <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
-          <h2 className="text-xl font-bold mb-2">MINTING <span className="text-sm text-gray-400">20 PESO per 1 USDC</span></h2>
-          <div className="space-y-4">
-            <div className="flex gap-2 items-end">
-              <input type="number" value={inputUSDC} onChange={(e) => setInputUSDC(e.target.value)} placeholder="USDC to Mint" className="w-full p-2 rounded bg-gray-800 border border-gray-600" />
-              <button className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">MINT</button>
+        {/* STAKING SECTION */}
+<div className="bg-gray-900 p-4 rounded border border-gray-700">
+  <h2 className="text-2xl font-bold mb-4 text-center">STAKE YOUR LPs FOR $KARTEL</h2>
+
+  <div className="space-y-4">
+    {[
+      {
+        name: 'PESO/USDC V2',
+        address: '0xbbC2789F3B85D4Fdb27E4e65132dA1fE4E20e738'
+      },
+      {
+        name: 'KARTEL/WETH V2',
+        address: '0xEA773ca13B95B87eA3d50D3E8A4BCB5856464aEC'
+      },
+      {
+        name: 'PESO/WETH V2',
+        address: '0xc28436C90877340496B1dd70693B7387e62AabE2'
+      }
+    ].map(pool => (
+      <div key={pool.address} className="border border-gray-600 p-4 rounded bg-gray-800 space-y-2">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <h3 className="text-lg font-semibold">{pool.name}</h3>
+            <p className="text-sm text-gray-400">LP Address: <span className="break-all">{pool.address}</span></p>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
+            <div className="flex gap-2 items-center w-full md:w-48">
+              <input
+                type="number"
+                placeholder="Amount"
+                className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-sm"
+              />
+              <button className="text-xs px-2 py-1 bg-gray-600 rounded hover:bg-gray-500">MAX</button>
             </div>
-            <div className="flex gap-2 items-end">
-              <input type="number" value={inputRedeem} onChange={(e) => setInputRedeem(e.target.value)} placeholder="PESO to Redeem" className="w-full p-2 rounded bg-gray-800 border border-gray-600" />
-              <button className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-white">REDEEM</button>
-            </div>
+            <button className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded text-white text-sm">Stake</button>
+            <button className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-white text-sm">Unstake</button>
+            <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white text-sm">Claim</button>
+            <a
+              href={`https://dex.kartel.exchange/add/${pool.name.replace(/\s/g, '').replace('V2', '').replace('/', '-')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded text-white text-sm"
+            >
+              Get LP
+            </a>
           </div>
         </div>
+
+        <div className="text-sm text-gray-300 pl-1">
+          <p>📥 Your Staked LP: <span className="font-semibold text-white">0.00</span></p>
+          <p>💰 Claimable $KARTEL: <span className="font-semibold text-white">0.00</span></p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+
 
         {/* TREASURY */}
         <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
