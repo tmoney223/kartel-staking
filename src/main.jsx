@@ -48,10 +48,9 @@ const Dashboard = () => {
   const { address, isConnected } = useAccount();
   const [prices, setPrices] = useState({ KARTEL: 0.0, PESO: 0.05, USDC: 1 });
   const [pesoSupply, setPesoSupply] = useState(0);
-  const [usdcReserves, setUsdcReserves] = useState(0);
 
   const kartel = useBalance({ address, token: KARTEL });
-  const usdc = useBalance({ address, token: USDC });
+  const usdcPeso = useBalance({ address: PESO, token: USDC });
   const peso = useBalance({ address, token: PESO });
   const lp = useBalance({ address, token: LP });
 
@@ -78,10 +77,6 @@ const Dashboard = () => {
         const pesoRes = await fetch(`https://api.basescan.org/api?module=stats&action=tokensupply&contractaddress=${PESO}&apikey=${apiKey}`);
         const pesoJson = await pesoRes.json();
         setPesoSupply(Number(pesoJson.result) / 1e18);
-
-        const usdcRes = await fetch(`https://api.basescan.org/api?module=account&action=tokenbalance&contractaddress=${USDC}&address=${PESO}&tag=latest&apikey=${apiKey}`);
-        const usdcJson = await usdcRes.json();
-        setUsdcReserves(Number(usdcJson.result) / 1e6);
       } catch (err) {
         console.error("Failed to fetch BaseScan stats", err);
       }
@@ -96,13 +91,24 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const formatUsd = (symbol, balance) => {
-    const val = parseFloat(balance);
-    const price = prices[symbol] || 0;
-    return isNaN(val) ? '' : ` ($${(val * price).toFixed(2)})`;
-  };
+  const formatUsdDisplay = (val) =>
+    isNaN(val) ? '...' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
-  const backingRatio = pesoSupply > 0 ? (usdcReserves / (pesoSupply * 0.05)).toFixed(2) : '...';
+  const parsedUSDC = Number(usdcPeso.data?.formatted || 0); // USDC in PESO contract
+  const parsedUSDC_T = Number(usdcT.data?.formatted || 0); // USDC in TREASURY wallet
+  const parsedPESO_T = Number(pesoT.data?.formatted || 0);
+  const parsedKARTEL_T = Number(kartelT.data?.formatted || 0);
+
+  const combinedUSDC = parsedUSDC + parsedUSDC_T;
+  const treasuryValue = combinedUSDC + parsedPESO_T * 0.05 + parsedKARTEL_T * prices.KARTEL;
+  const pesoBackingRatio = pesoSupply > 0
+  ? ((parsedUSDC + parsedUSDC_T) / (pesoSupply * 0.05)) * 100
+  : 0;
+
+console.log('USDC in treasury:', parsedUSDC_T);
+console.log('PESO supply:', pesoSupply);
+console.log('Denominator (pesoSupply * 0.05):', pesoSupply * 0.05);
+console.log('Backing Ratio:', pesoBackingRatio);
 
   return (
     <div className="min-h-screen text-white p-6 flex flex-col items-center" style={{
@@ -111,113 +117,83 @@ const Dashboard = () => {
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     }}>
-      {/* Logo & Connect */}
       <div className="flex flex-col items-center mb-6">
-        <img src="/kartel-logo.png" alt="KARTEL" className="w-[20rem] mb-4 border-4 border-black rounded" />
+        <img src="/dashboard-logo.png" alt="KARTEL" className="w-[20rem] mb-4 border-4 border-black rounded" />
         <ConnectButton label="Connect Wallet" chainStatus="none" showBalance={false} />
         {isConnected && (
           <div className="mt-2 bg-gray-800 px-4 py-2 rounded text-sm border border-gray-600">{address}</div>
         )}
       </div>
 
-      {/* Content */}
       <div className="w-full max-w-3xl space-y-6">
-        {/* BALANCES */}
-<div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
-  <h2 className="text-xl font-bold mb-4">BALANCES</h2>
-  <p>KARTEL: {kartel.data?.formatted}{formatUsd('KARTEL', kartel.data?.formatted)}</p>
-  <p>USDC: {usdc.data?.formatted}{formatUsd('USDC', usdc.data?.formatted)}</p>
-  <p>PESO: {peso.data?.formatted}{formatUsd('PESO', peso.data?.formatted)}</p>
-  {/* TODO: Replace with actual LP balance hooks below */}
-  <p>PESO/USDC V2 LP: 0.00</p>
-  <p>KARTEL/WETH V2 LP: 0.00</p>
-  <p>PESO/WETH V2 LP: 0.00</p>
+        <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
+          <h2 className="text-xl font-bold mb-4">BALANCES</h2>
+          <p>KARTEL: {kartel.data?.formatted} ({formatUsdDisplay(Number(kartel.data?.formatted) * prices.KARTEL)})</p>
+          <p>USDC: {(parsedUSDC + parsedUSDC_T).toLocaleString()} ({formatUsdDisplay(parsedUSDC + parsedUSDC_T)})</p>
+          <p>PESO: {peso.data?.formatted} ({formatUsdDisplay(Number(peso.data?.formatted) * 0.05)})</p>
+          <p>PESO/USDC V2 LP: 0.00</p>
+          <p>KARTEL/WETH V2 LP: 0.00</p>
+        </div>
+
+        <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
+          <h2 className="text-2xl font-bold mb-4">STAKE YOUR LPs FOR $KARTEL</h2>
+          {[{
+            name: 'PESO/USDC V2',
+            address: '0xbbC2789F3B85D4Fdb27E4e65132dA1fE4E20e738'
+          }, {
+            name: 'KARTEL/WETH V2',
+            address: '0xEA773ca13B95B87eA3d50D3E8A4BCB5856464aEC'
+          }].map(pool => (
+            <div key={pool.address} className="border border-gray-600 p-4 rounded bg-gray-800 space-y-2">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div>
+                  <h3 className="text-lg font-semibold">{pool.name}</h3>
+                  <p className="text-sm text-gray-400">LP Address: <span className="break-all">{pool.address}</span></p>
+                </div>
+                <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
+                  <div className="flex gap-2 items-center w-full md:w-48">
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-sm"
+                    />
+                    <button className="text-xs px-2 py-1 bg-gray-600 rounded hover:bg-gray-500">MAX</button>
+                  </div>
+                  <button className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded text-white text-sm">Stake</button>
+                  <button className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-white text-sm">Unstake</button>
+                                  </div>
+              </div>
+              <a
+                href={`https://dex.kartel.exchange/add/${pool.name.replace(/\s/g, '').replace('V2', '').replace('/', '-')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white text-sm mt-2"
+              >
+                Get LP
+              </a>
+              <div className="text-sm text-gray-300 pl-1 pt-2 space-y-1">
+                <p>📥 Your Staked LP: <span className="font-semibold text-white">0.00</span> <span className="text-gray-400">($0.00)</span></p>
+                <div className="flex flex-col items-center justify-center text-center">
+  <p>💰 Claimable $KARTEL: <span className="font-semibold text-white">0.00</span> <span className="text-gray-400">($0.00)</span></p>
+  <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-white text-sm mt-2">Claim</button>
 </div>
-
-
-        {/* STAKING SECTION */}
-<div className="bg-gray-900 p-4 rounded border border-gray-700">
-  <h2 className="text-2xl font-bold mb-4 text-center">STAKE YOUR LPs FOR $KARTEL</h2>
-
-  <div className="space-y-4">
-    {[
-      {
-        name: 'PESO/USDC V2',
-        address: '0xbbC2789F3B85D4Fdb27E4e65132dA1fE4E20e738'
-      },
-      {
-        name: 'KARTEL/WETH V2',
-        address: '0xEA773ca13B95B87eA3d50D3E8A4BCB5856464aEC'
-      },
-      {
-        name: 'PESO/WETH V2',
-        address: '0xc28436C90877340496B1dd70693B7387e62AabE2'
-      }
-    ].map(pool => (
-      <div key={pool.address} className="border border-gray-600 p-4 rounded bg-gray-800 space-y-2">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <div>
-            <h3 className="text-lg font-semibold">{pool.name}</h3>
-            <p className="text-sm text-gray-400">LP Address: <span className="break-all">{pool.address}</span></p>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
-            <div className="flex gap-2 items-center w-full md:w-48">
-              <input
-                type="number"
-                placeholder="Amount"
-                className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-sm"
-              />
-              <button className="text-xs px-2 py-1 bg-gray-600 rounded hover:bg-gray-500">MAX</button>
+<p>📈 Est. Daily Rewards: <span className="font-semibold text-white">0.00</span> $KARTEL <span className="text-gray-400">($0.00/day)</span></p>
+              </div>
             </div>
-            <button className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded text-white text-sm">Stake</button>
-            <button className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-white text-sm">Unstake</button>
-            <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white text-sm">Claim</button>
-          </div>
+          ))}
         </div>
 
-        <a
-          href={`https://dex.kartel.exchange/add/${pool.name.replace(/\s/g, '').replace('V2', '').replace('/', '-')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-center bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white text-sm mt-2"
-        >
-          Get LP
-        </a>
-
-        <div className="text-sm text-gray-300 pl-1 pt-2">
-          <p>📥 Your Staked LP: <span className="font-semibold text-white">0.00</span> <span className="text-gray-400">($0.00)</span></p>
-          <p>💰 Claimable $KARTEL: <span className="font-semibold text-white">0.00</span> <span className="text-gray-400">($0.00)</span></p>
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
-
-
-
-
-        {/* TREASURY */}
         <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
           <h2 className="text-xl font-bold mb-4">TREASURY {TREASURY}</h2>
-          <p>KARTEL/PESO LP: {lpT.data?.formatted}</p>
-          <p>KARTEL: {kartelT.data?.formatted}{formatUsd('KARTEL', kartelT.data?.formatted)}</p>
-          <p>USDC: {usdcT.data?.formatted}{formatUsd('USDC', usdcT.data?.formatted)}</p>
-          <p>PESO: {pesoT.data?.formatted}{formatUsd('PESO', pesoT.data?.formatted)}</p>
-        </div>
-
-        {/* STATS */}
-        <div className="bg-gray-900 p-4 rounded border border-gray-700 text-center">
-          <h2 className="text-xl font-bold mb-4">STATISTICS</h2>
-          <p>PESO Circulating Supply: {pesoSupply.toLocaleString()}</p>
-          <p>USDC Reserves: ${usdcReserves.toLocaleString()}</p>
-          <p>Backing Ratio: {backingRatio}</p>
-        </div>
-
-        {/* Footer Buttons */}
-        <div className="flex gap-4 justify-center mt-8">
-          <a href="https://stake.kartel.exchange" className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded text-white">STAKING DAPP</a>
-          <a href="https://bond.kartel.exchange" className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded text-white">BONDING DAPP</a>
+          <p className="mb-2 text-lg font-semibold text-green-400">
+            TREASURY TOTAL VALUE: {formatUsdDisplay(treasuryValue)}
+          </p>
+          <p>TREASURY VALUE (LP): {lpT.data?.formatted}</p>
+          <p>KARTEL: {kartelT.data?.formatted} ({formatUsdDisplay(parsedKARTEL_T * prices.KARTEL)})</p>
+          <p>USDC: {(parsedUSDC + parsedUSDC_T).toLocaleString()} ({formatUsdDisplay(parsedUSDC + parsedUSDC_T)})</p>
+          <p>PESO: {pesoT.data?.formatted} ({formatUsdDisplay(parsedPESO_T * 0.05)})</p>
+          <p className="mt-4">PESOS MINTED: {pesoSupply.toLocaleString()}</p>
+          <p>PESO BACKING RATIO: {pesoSupply > 0 ? pesoBackingRatio.toFixed(2) + '%' : '...'}</p>
         </div>
       </div>
     </div>
